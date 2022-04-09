@@ -11,25 +11,25 @@ services:
   nginx:
     image: nginx:stable-alpine
     container_name: ${WEB_CONTAINER}
-    working_dir: /var/www
-    restart: always
+    working_dir: /var/www/apps
+    restart: unless-stopped
     networks: 
       - ${NETWORK_NAME}
     ports:
       - ${WEB_HTTP_PORT}:80
     volumes:
-      - ./webapp:/var/www/webapp:ro
-      - ./webtes:/var/www/webtes:ro
-      - ./nginx/conf:/etc/nginx/conf.d:ro
-      - ./nginx/logs:/var/logs:rw
+      - ./frontapps:/var/www/apps/frontend:ro
+      - ./backapps:/var/www/apps/backend:ro
+      - ./conf/nginx:/etc/nginx/conf.d:ro
+      - ./logs/nginx:/var/www/apps/logs:rw
     depends_on:
-      - php-app
+      - php-frontend
       - php-tes
-  php-app:
+  php-frontend:
     image: xamarie/phpdocker:7.4-fpm-alpine
-    container_name: ${PHP_CONTAINER}_app
-    working_dir: /var/www/webapp
-    restart: always
+    container_name: ${PHP_CONTAINER}_frontend
+    working_dir: /var/www/apps/frontend
+    restart: unless-stopped
     links:
       - redis
       - postgresql
@@ -42,15 +42,14 @@ services:
       - redis
       - postgresql
     volumes:
-      - ./webapp:/var/www/webapp:rw
-      - ./php/worker/app-worker.conf:/etc/supervisor/conf.d/app-worker.conf:ro
+      - ./frontapps:/var/www/apps/frontend:rw
     ports:
       - ${PHP_WORKER_PORT}:9001
-  php-tes:
+  php-backend:
     image: xamarie/phpdocker:7.4-fpm-alpine
-    container_name: ${PHP_CONTAINER}_tes
-    working_dir: /var/www/webtes
-    restart: always
+    container_name: ${PHP_CONTAINER}_backend
+    working_dir: /var/www/apps/backend
+    restart: unless-stopped
     links:
       - redis
       - postgresql
@@ -63,7 +62,8 @@ services:
       - redis
       - postgresql
     volumes:
-      - ./webtes:/var/www/webtes:rw
+      - ./backapps:/var/www/apps/backend:rw
+      - ./conf/worker/app-worker.conf:/etc/supervisor/conf.d/app-worker.conf:ro
   postgresql:
     image: postgres:14-alpine
     container_name: ${PGSQL_DB_CONTAINER}
@@ -92,4 +92,3 @@ services:
       - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
       - ${REDIS_PORT}:6379
-  
