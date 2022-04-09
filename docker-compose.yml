@@ -16,7 +16,8 @@ services:
     networks: 
       - ${NETWORK_NAME}
     ports:
-      - ${WEB_HTTP_PORT}:80
+      - ${FE_HTTP_PORT}:8080
+      - ${BE_HTTP_PORT}:8888
     volumes:
       - ./frontapps:/var/www/apps/frontend:ro
       - ./backapps:/var/www/apps/backend:ro
@@ -44,8 +45,8 @@ services:
     volumes:
       - ./frontapps:/var/www/apps/frontend:rw
       # - ./conf/worker/frontapps-worker.conf:/etc/supervisor/conf.d/frontend-worker.conf:ro
-    ports:
-      - ${PHP_WORKER_PORT}:9001
+    # ports:
+    #   - ${PHP_WORKER_PORT}:9001
   php-backend:
     image: xamarie/phpdocker:7.4-fpm-alpine
     container_name: ${PHP_CONTAINER}_backend
@@ -65,6 +66,8 @@ services:
     volumes:
       - ./backapps:/var/www/apps/backend:rw
       # - ./conf/worker/backapps-worker.conf:/etc/supervisor/conf.d/backend-worker.conf:ro
+    # ports:
+    # - ${PHP_WORKER_PORT}:9001
   postgresql:
     image: postgres:14-alpine
     container_name: ${PGSQL_DB_CONTAINER}
