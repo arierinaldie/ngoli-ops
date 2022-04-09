@@ -1,6 +1,6 @@
 version: '3.6'
 networks: 
-  net_testpotensi_bpsdm:
+  net_apps:
     name: ${NETWORK_NAME}
     driver: ${NETWORK_DRIVER}
     ipam: 
@@ -21,10 +21,10 @@ services:
       - ./frontapps:/var/www/apps/frontend:ro
       - ./backapps:/var/www/apps/backend:ro
       - ./conf/nginx:/etc/nginx/conf.d:ro
-      - ./logs/nginx:/var/www/apps/logs:rw
+      - ./logs/nginx:/var/www/apps/logs/nginx:rw
     depends_on:
       - php-frontend
-      - php-tes
+      - php-backend
   php-frontend:
     image: xamarie/phpdocker:7.4-fpm-alpine
     container_name: ${PHP_CONTAINER}_frontend
@@ -43,6 +43,7 @@ services:
       - postgresql
     volumes:
       - ./frontapps:/var/www/apps/frontend:rw
+      # - ./conf/worker/frontapps-worker.conf:/etc/supervisor/conf.d/frontend-worker.conf:ro
     ports:
       - ${PHP_WORKER_PORT}:9001
   php-backend:
@@ -63,7 +64,7 @@ services:
       - postgresql
     volumes:
       - ./backapps:/var/www/apps/backend:rw
-      - ./conf/worker/app-worker.conf:/etc/supervisor/conf.d/app-worker.conf:ro
+      # - ./conf/worker/backapps-worker.conf:/etc/supervisor/conf.d/backend-worker.conf:ro
   postgresql:
     image: postgres:14-alpine
     container_name: ${PGSQL_DB_CONTAINER}
@@ -89,6 +90,6 @@ services:
       TZ: "Asia/Jakarta"
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
       - ${REDIS_PORT}:6379
