@@ -1,0 +1,95 @@
+version: '3.6'
+networks: 
+  net_apps:
+    name: ${NETWORK_NAME}
+    driver: ${NETWORK_DRIVER}
+    ipam: 
+      driver: default
+      config: 
+        - subnet: 172.16.150.0/24
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ${WEB_CONTAINER}
+    working_dir: /var/www/apps
+    restart: unless-stopped
+    networks: 
+      - ${NETWORK_NAME}
+    ports:
+      - ${WEB_HTTP_PORT}:80
+    volumes:
+      - ./frontapps:/var/www/apps/frontend:ro
+      - ./backapps:/var/www/apps/backend:ro
+      - ./conf/nginx:/etc/nginx/conf.d:ro
+      - ./logs/nginx:/var/www/apps/logs/nginx:rw
+    depends_on:
+      - php-frontend
+      - php-backend
+  php-frontend:
+    image: xamarie/phpdocker:7.4-fpm-alpine
+    container_name: ${PHP_CONTAINER}_frontend
+    working_dir: /var/www/apps/frontend
+    restart: unless-stopped
+    links:
+      - redis
+      - postgresql
+    environment:
+      - REDIS_URL=redis
+      - PGSQL_URL=postgresql
+    networks: 
+      - ${NETWORK_NAME}
+    depends_on:
+      - redis
+      - postgresql
+    volumes:
+      - ./frontapps:/var/www/apps/frontend:rw
+      # - ./conf/worker/frontapps-worker.conf:/etc/supervisor/conf.d/frontend-worker.conf:ro
+    ports:
+      - ${PHP_WORKER_PORT}:9001
+  php-backend:
+    image: xamarie/phpdocker:7.4-fpm-alpine
+    container_name: ${PHP_CONTAINER}_backend
+    working_dir: /var/www/apps/backend
+    restart: unless-stopped
+    links:
+      - redis
+      - postgresql
+    environment:
+      - REDIS_URL=redis
+      - PGSQL_URL=postgresql
+    networks: 
+      - ${NETWORK_NAME}
+    depends_on:
+      - redis
+      - postgresql
+    volumes:
+      - ./backapps:/var/www/apps/backend:rw
+      # - ./conf/worker/backapps-worker.conf:/etc/supervisor/conf.d/backend-worker.conf:ro
+  postgresql:
+    image: postgres:14-alpine
+    container_name: ${PGSQL_DB_CONTAINER}
+    restart: unless-stopped
+    networks: 
+      - ${NETWORK_NAME}
+    environment:
+      - POSTGRES_DB=${PGSQL_DB_NAME}
+      - POSTGRES_USER=${PGSQL_DB_USER}
+      - POSTGRES_PASSWORD=${PGSQL_DB_PASS}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - ${PGSQL_DB_PORT}:5432
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata:rw
+  redis:
+    image: redis:latest
+    container_name: ${REDIS_CONTAINER}
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+    environment: 
+      TZ: "Asia/Jakarta"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - ${REDIS_PORT}:6379

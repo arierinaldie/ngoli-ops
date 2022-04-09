@@ -1,0 +1,6 @@
+[submodule "frontapps"]
+	path = frontapps
+	url = git@github.com:arierinaldie/frontapps.git
+[submodule "backapps"]
+	path = backapps
+	url = git@github.com:arierinaldie/backapps.git
